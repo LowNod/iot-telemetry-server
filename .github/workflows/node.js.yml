@@ -1,0 +1,36 @@
+name: Node.js CI Pipeline
+
+# Коли запускати цю перевірку?
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest # GitHub виділяє нам віртуальний Linux-сервер
+
+    steps:
+    # 1. Завантажуємо код з репозиторію
+    - name: Отримання коду
+      uses: actions/checkout@v3
+
+    # 2. Встановлюємо Node.js (версія 18)
+    - name: Налаштування Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+
+    # 3. Встановлюємо всі бібліотеки (Express, MySQL2, Dotenv)
+    - name: Встановлення залежностей (npm install)
+      run: npm ci
+
+    # 4. Базова перевірка синтаксису сервера
+    # Запускаємо сервер на 2 секунди і "вбиваємо", щоб переконатись, що він взагалі стартує і не падає
+    - name: Перевірка запуску сервера
+      run: |
+        node server.js & 
+        sleep 2 
+        kill $!

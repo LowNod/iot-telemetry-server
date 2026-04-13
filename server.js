@@ -1,13 +1,13 @@
 require('dotenv').config();
 const express = require('express');
-const mysql = require('mysql2/promise'); // Використовуємо версію з підтримкою Promises
+const mysql = require('mysql2/promise');
 
 const app = express();
 
-// Дозволяємо Express автоматично парсити вхідні JSON-дані
+// Дозвіл Express автоматично парсити вхідні JSON-дані
 app.use(express.json());
 
-// Тепер порт береться з .env, а якщо його там немає - ставиться 3000
+// Порт береться з .env, а якщо його там немає - ставиться 3000
 const port = process.env.PORT || 3000;
 
 const dbPool = mysql.createPool({
@@ -20,7 +20,7 @@ const dbPool = mysql.createPool({
     queueLimit: 0
 });
 
-// Створюємо маршрут (endpoint), на який мікроконтролер буде відправляти POST-запит
+// Створюється маршрут (endpoint), на який мікроконтролер буде відправляти POST-запит
 app.post('/api/telemetry', async (req, res) => {
     // Витягуємо дані з JSON, який надіслав мікроконтролер
     const { device_id, voltage, charge_percentage, temperature, network_status } = req.body;
@@ -32,14 +32,13 @@ app.post('/api/telemetry', async (req, res) => {
 
     try {
         // SQL-запит для вставки даних
-        // Використовуємо знаки питання (?) для захисту від SQL-ін'єкцій
         const query = `
             INSERT INTO Telemetry 
             (device_id, voltage, charge_percentage, temperature, network_status) 
             VALUES (?, ?, ?, ?, ?)
         `;
         
-        // Виконуємо запит, підставляючи змінні замість знаків питання
+        // Виконується запит, підставляючи змінні замість знаків питання
         const [result] = await dbPool.execute(query, [
             device_id, 
             voltage || null, 
@@ -57,7 +56,7 @@ app.post('/api/telemetry', async (req, res) => {
         });
 
     } catch (error) {
-        // Якщо сталася помилка (наприклад, такого device_id не існує в таблиці Devices)
+        // Якщо сталася помилка
         console.error('[Помилка бази даних]:', error.message);
         res.status(500).json({ error: "Внутрішня помилка сервера при збереженні даних" });
     }
