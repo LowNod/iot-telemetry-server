@@ -63,6 +63,6 @@ app.post('/api/telemetry', async (req, res) => {
 });
 
 // Запускаємо сервер
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
     console.log(`Сервер запущено. Очікування даних на http://localhost:${port}/api/telemetry`);
 });

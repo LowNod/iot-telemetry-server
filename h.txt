@@ -1,0 +1,86 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+
+// --- ТВОЇ НАЛАШТУВАННЯ ---
+const char* ssid = "15APR9 0359";
+const char* password = "[562z4M7";
+// 192.168.137.1
+// ВАЖЛИВО: Впиши сюди локальний IPv4 твого ноутбука (через ipconfig), та порт :3000
+const char* serverUrl = "http://192.168.137.1:3000/api/telemetry"; 
+// -------------------------
+
+void setup() {
+  Serial.begin(115200);
+  delay(10);
+
+  // Налаштування генератора випадкових чисел
+  randomSeed(analogRead(0));
+
+  Serial.println("\n--- Старт ESP32 ---");
+  Serial.print("Підключення до Wi-Fi: ");
+  Serial.println(ssid);
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("\n[ОК] Wi-Fi підключено!");
+  Serial.print("IP адреса ESP32: ");
+  Serial.println(WiFi.localIP());
+}
+
+void loop() {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    
+    Serial.println("\n[INFO] Відправка даних на сервер...");
+    http.begin(serverUrl);
+    http.addHeader("Content-Type", "application/json");
+    
+    // --- ГЕНЕРАЦІЯ СИМУЛЬОВАНИХ ДАНИХ ---
+    // Напруга від 11.5 до 12.8 Вольт
+    float sim_voltage = random(1150, 1280) / 100.0; 
+    // Заряд від 10 до 100%
+    int sim_charge = random(10, 100);               
+    // Температура від 20.0 до 35.0 градусів
+    float sim_temp = random(200, 350) / 10.0;       
+
+    // Формуємо JSON
+    StaticJsonDocument<200> doc;
+    doc["device_id"] = 1; 
+    doc["voltage"] = sim_voltage;
+    doc["charge_percentage"] = sim_charge;
+    doc["temperature"] = sim_temp;
+    doc["network_status"] = "connected";
+    
+    String jsonPayload;
+    serializeJson(doc, jsonPayload);
+    
+    // Показуємо в моніторі порту, що саме відправляємо
+    Serial.print("JSON: ");
+    Serial.println(jsonPayload);
+    
+    // Відправляємо POST-запит
+    int httpResponseCode = http.POST(jsonPayload);
+    
+    if (httpResponseCode > 0) {
+      Serial.print("[ОК] Код відповіді сервера: ");
+      Serial.println(httpResponseCode);
+    } else {
+      Serial.print("[ПОМИЛКА] Не вдалося відправити. Код помилки: ");
+      Serial.println(httpResponseCode);
+      Serial.println("Перевір IP-адресу сервера і чи запущений Node.js!");
+    }
+    
+    http.end(); // Звільняємо ресурси
+  } else {
+    Serial.println("[ПОМИЛКА] Зникло з'єднання з Wi-Fi");
+  }
+  
+  // Чекаємо 10 секунд перед наступною відправкою
+  delay(10000); 
+}
